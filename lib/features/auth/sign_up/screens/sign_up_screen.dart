@@ -1,3 +1,7 @@
+import 'dart:developer';
+
+import 'package:ecommerce_app_huma_volve/core/widgets/api/api_client.dart';
+import 'package:ecommerce_app_huma_volve/features/auth/sign_up/service/api_service_sign.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../core/widgets/custom_text_field.dart';
@@ -17,14 +21,56 @@ class _SignUpScreenState extends State<SignUpScreen> {
   late final TextEditingController nameController;
   late final TextEditingController emailController;
   late final TextEditingController passwordController;
+  late final ApiClient apiClient;
+  late final ApiSignUp apiSignUp;
+  bool isLoading = false;
 
   @override
   void initState() {
+    super.initState();
+    apiClient = ApiClient();
+    apiSignUp = ApiSignUp(apiClient: apiClient);
     nameController = TextEditingController();
     emailController = TextEditingController();
     passwordController = TextEditingController();
+  }
 
-    super.initState();
+  Future<void> signUp() async {
+    if (_formKey.currentState?.validate() ?? false) {
+      setState(() {
+        isLoading = true;
+      });
+      try {
+        final response = await apiSignUp.signUp(
+          nameController.text.trim(),
+          emailController.text.trim(),
+          passwordController.text,
+        );
+        log("Registered user: ${response.email}");
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Account created successfully! Please login.')),
+        );
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const LoginScreen(),
+          ),
+        );
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Sign up failed: $e')),
+        );
+      } finally {
+        if (mounted) {
+          setState(() {
+            isLoading = false;
+          });
+        }
+      }
+    }
   }
 
   @override
@@ -110,16 +156,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 const SizedBox(height: 40),
                 PrimaryButton(
                   text: 'Sign Up',
-                  onPressed: () async {
-                    if (_formKey.currentState?.validate() ?? false) {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const LoginScreen(),
-                        ),
-                      );
-                    }
-                  },
+                  isLoading: isLoading,
+                  onPressed: signUp,
                 ),
                 const SizedBox(height: 24),
                 Row(

@@ -1,4 +1,7 @@
+import 'dart:developer';
 
+import 'package:ecommerce_app_huma_volve/core/widgets/api/api_client.dart';
+import 'package:ecommerce_app_huma_volve/features/auth/login/service/api_login.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../core/widgets/custom_text_field.dart';
@@ -18,13 +21,53 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController emailController;
   late final TextEditingController passwordController;
+  late final ApiClient apiClient;
+  late final ApiLogin apiLogin;
+  bool isLoading = false;
 
   @override
   void initState() {
+    super.initState();
+
+    apiClient = ApiClient();
+    apiLogin = ApiLogin(apiClient: apiClient);
     emailController = TextEditingController();
     passwordController = TextEditingController();
+  }
 
-    super.initState();
+  Future<void> logIn() async {
+    if (_formKey.currentState?.validate() ?? false) {
+      setState(() {
+        isLoading = true;
+      });
+      try {
+        final response = await apiLogin.logIn(
+          emailController.text.trim(),
+          passwordController.text,
+        );
+        log("token:${response.accessToken}");
+        log("reftoken:${response.refreshToken}");
+
+        if (!mounted) return;
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => const MainNavigationScreen(),
+          ),
+        );
+      } catch (e) {
+        log("Login error: $e");
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Login failed: $e')),
+        );
+      } finally {
+        if (mounted) {
+          setState(() {
+            isLoading = false;
+          });
+        }
+      }
+    }
   }
 
   @override
@@ -108,15 +151,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 32),
                 PrimaryButton(
                   text: 'Login',
-                  onPressed: () {
-                    if (_formKey.currentState?.validate() ?? false) {
-                      Navigator.of(context).pushReplacement(
-                        MaterialPageRoute(
-                          builder: (context) => MainNavigationScreen(),
-                        ),
-                      );
-                    }
-                  },
+                  isLoading: isLoading,
+                  onPressed: logIn,
                 ),
                 const SizedBox(height: 24),
                 Row(
