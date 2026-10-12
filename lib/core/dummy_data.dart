@@ -8,6 +8,7 @@ class Product {
   final String imageUrl;
   final List<Color> colors;
   final List<String> sizes;
+  final String categoryName;
 
   Product({
     required this.id,
@@ -17,7 +18,35 @@ class Product {
     required this.imageUrl,
     required this.colors,
     required this.sizes,
+    this.categoryName = '',
   });
+
+  factory Product.fromJson(Map<String, dynamic> json) {
+    String image = 'https://picsum.photos/300/300';
+    if (json['images'] is List && (json['images'] as List).isNotEmpty) {
+      final raw = (json['images'] as List).first.toString();
+      final cleaned = raw.replaceAll(RegExp(r'[\[\]"]'), '').trim();
+      if (cleaned.startsWith('http')) {
+        image = cleaned;
+      }
+    }
+
+    String category = '';
+    if (json['category'] is Map<String, dynamic>) {
+      category = json['category']['name']?.toString() ?? '';
+    }
+
+    return Product(
+      id: json['id']?.toString() ?? '',
+      name: json['title']?.toString() ?? json['name']?.toString() ?? '',
+      description: json['description']?.toString() ?? '',
+      price: (json['price'] is num) ? (json['price'] as num).toDouble() : 0.0,
+      imageUrl: image,
+      colors: const [Colors.black, Colors.white, Colors.blue, Colors.grey],
+      sizes: const ['S', 'M', 'L', 'XL'],
+      categoryName: category,
+    );
+  }
 }
 
 final dummyProducts = [

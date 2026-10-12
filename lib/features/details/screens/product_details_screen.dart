@@ -66,6 +66,14 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                 child: Image.network(
                   widget.product.imageUrl,
                   fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    color: Colors.grey.shade200,
+                    child: const Icon(
+                      Icons.image_not_supported_outlined,
+                      color: Colors.grey,
+                      size: 64,
+                    ),
+                  ),
                 ),
               ),
             ),

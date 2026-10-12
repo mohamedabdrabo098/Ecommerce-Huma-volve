@@ -6,5 +6,7 @@ class ApiConstants {
   static const String registerEndpoint = "users/";
   static const String profileEndpoint = "auth/profile";
   static const String refreshTokenEndpoint = "auth/refresh-token";
+  static const String productsEndpoint = "products";
+  static const String categoriesEndpoint = "categories";
 }
 
