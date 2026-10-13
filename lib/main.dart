@@ -1,9 +1,7 @@
-import 'package:ecommerce_app_huma_volve/features/auth/login/screens/login_screen.dart';
-import 'package:ecommerce_app_huma_volve/features/main_navigation/screens/main_navigation_screen.dart';
 import 'package:flutter/material.dart';
 
 import 'core/theme.dart';
-import 'features/splash/screens/splash_screen.dart';
+import 'features/main_navigation/screens/main_navigation_screen.dart';
 
 void main() {
   runApp(const MyApp());

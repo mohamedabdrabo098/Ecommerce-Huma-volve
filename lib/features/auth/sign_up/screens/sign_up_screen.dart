@@ -1,13 +1,12 @@
-import 'dart:developer';
-
-import 'package:ecommerce_app_huma_volve/core/widgets/api/api_client.dart';
-import 'package:ecommerce_app_huma_volve/features/auth/sign_up/service/api_service_sign.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/widgets/custom_text_field.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../../../core/theme.dart';
 import '../../login/screens/login_screen.dart';
+import '../cubit/sign_up_cubit.dart';
+import '../cubit/sign_up_state.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -21,56 +20,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
   late final TextEditingController nameController;
   late final TextEditingController emailController;
   late final TextEditingController passwordController;
-  late final ApiClient apiClient;
-  late final ApiSignUp apiSignUp;
-  bool isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    apiClient = ApiClient();
-    apiSignUp = ApiSignUp(apiClient: apiClient);
     nameController = TextEditingController();
     emailController = TextEditingController();
     passwordController = TextEditingController();
-  }
-
-  Future<void> signUp() async {
-    if (_formKey.currentState?.validate() ?? false) {
-      setState(() {
-        isLoading = true;
-      });
-      try {
-        final response = await apiSignUp.signUp(
-          nameController.text.trim(),
-          emailController.text.trim(),
-          passwordController.text,
-        );
-        log("Registered user: ${response.email}");
-
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Account created successfully! Please login.')),
-        );
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const LoginScreen(),
-          ),
-        );
-      } catch (e) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Sign up failed: $e')),
-        );
-      } finally {
-        if (mounted) {
-          setState(() {
-            isLoading = false;
-          });
-        }
-      }
-    }
   }
 
   @override
@@ -83,33 +39,35 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.background,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(32.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 40),
-                Icon(Icons.person_add, size: 80, color: AppTheme.primary),
-                const SizedBox(height: 32),
-                Text(
-                  'Create Account',
-                  style: Theme.of(context).textTheme.displayLarge
-                      ?.copyWith(fontSize: 32),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Sign up to get started',
-                  style: Theme.of(context).textTheme.bodyMedium
-                      ?.copyWith(fontSize: 16),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 48),
+    return BlocProvider(
+      create: (context) => SignUpCubit(),
+      child: Scaffold(
+        backgroundColor: AppTheme.background,
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(32.0),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: 40),
+                  Icon(Icons.person_add, size: 80, color: AppTheme.primary),
+                  const SizedBox(height: 32),
+                  Text(
+                    'Create Account',
+                    style: Theme.of(context).textTheme.displayLarge
+                        ?.copyWith(fontSize: 32),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Sign up to get started',
+                    style: Theme.of(context).textTheme.bodyMedium
+                        ?.copyWith(fontSize: 16),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 48),
                 CustomTextField(
                   controller: nameController,
                   hintText: 'Full Name',
@@ -154,10 +112,45 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   },
                 ),
                 const SizedBox(height: 40),
-                PrimaryButton(
-                  text: 'Sign Up',
-                  isLoading: isLoading,
-                  onPressed: signUp,
+                BlocConsumer<SignUpCubit, SignUpState>(
+                  listener: (context, state) {
+                    if (state is SignUpSuccess) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Account created successfully! Please login.',
+                          ),
+                        ),
+                      );
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const LoginScreen(),
+                        ),
+                      );
+                    } else if (state is SignUpError) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Sign up failed: ${state.message}'),
+                        ),
+                      );
+                    }
+                  },
+                  builder: (context, state) {
+                    return PrimaryButton(
+                      text: 'Sign Up',
+                      isLoading: state is SignUpLoading,
+                      onPressed: () {
+                        if (_formKey.currentState?.validate() ?? false) {
+                          context.read<SignUpCubit>().signUp(
+                            name: nameController.text.trim(),
+                            email: emailController.text.trim(),
+                            password: passwordController.text,
+                          );
+                        }
+                      },
+                    );
+                  },
                 ),
                 const SizedBox(height: 24),
                 Row(
@@ -204,6 +197,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

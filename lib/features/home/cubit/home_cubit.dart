@@ -1,15 +1,37 @@
-import 'package:ecommerce_app_huma_volve/core/widgets/api/api_client.dart';
-import 'package:ecommerce_app_huma_volve/features/home/service/api_home.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../core/dummy_data.dart';
+import '../../../../core/dummy_data.dart';
+import '../../../../core/usecases/usecase.dart';
+import '../../../../core/widgets/api/api_client.dart';
+import '../data/datasources/home_remote_data_source.dart';
+import '../data/repositories/home_repository_impl.dart';
+import '../domain/usecases/get_categories_usecase.dart';
+import '../domain/usecases/get_products_usecase.dart';
 import 'home_state.dart';
 
 class HomeCubit extends Cubit<HomeState> {
-  final ApiHome apiHome;
+  final GetCategoriesUseCase getCategoriesUseCase;
+  final GetProductsUseCase getProductsUseCase;
 
-  HomeCubit({ApiHome? apiHome})
-      : apiHome = apiHome ?? ApiHome(apiClient: ApiClient()),
+  HomeCubit({
+    GetCategoriesUseCase? getCategoriesUseCase,
+    GetProductsUseCase? getProductsUseCase,
+  })  : getCategoriesUseCase = getCategoriesUseCase ??
+            GetCategoriesUseCase(
+              HomeRepositoryImpl(
+                remoteDataSource: HomeRemoteDataSourceImpl(
+                  apiClient: ApiClient(),
+                ),
+              ),
+            ),
+        getProductsUseCase = getProductsUseCase ??
+            GetProductsUseCase(
+              HomeRepositoryImpl(
+                remoteDataSource: HomeRemoteDataSourceImpl(
+                  apiClient: ApiClient(),
+                ),
+              ),
+            ),
         super(HomeInitial());
 
   int selectedCategoryIndex = 0;
@@ -20,7 +42,7 @@ class HomeCubit extends Cubit<HomeState> {
   Future<void> getCategories() async {
     emit(CategoryLoading());
     try {
-      categories = await apiHome.getCategories();
+      categories = await getCategoriesUseCase(const NoParams());
       emit(CategorySuccess(categories));
     } catch (e) {
       emit(CategoryError(e.toString()));
@@ -30,7 +52,7 @@ class HomeCubit extends Cubit<HomeState> {
   Future<void> getProducts() async {
     emit(ProductLoading());
     try {
-      allProducts = await apiHome.getProducts();
+      allProducts = await getProductsUseCase(const NoParams());
       products = allProducts;
       if (products.isEmpty) {
         emit(ProductError('No products found'));
@@ -60,4 +82,3 @@ class HomeCubit extends Cubit<HomeState> {
     }
   }
 }
-
