@@ -21,14 +21,20 @@ class LoginCubit extends Cubit<LoginState> {
         super(LoginInitial());
 
   Future<void> login(String email, String password) async {
-    emit(LoginLoading());
+    if (!isClosed) emit(LoginLoading());
     try {
       final token = await loginUseCase(
         LoginParams(email: email, password: password),
       );
-      emit(LoginSuccess(token));
+      if (!isClosed) emit(LoginSuccess(token));
     } catch (e) {
-      emit(LoginError(e.toString()));
+      String errorMessage = 'Login failed. Please check your credentials.';
+      if (e.toString().contains('401')) {
+        errorMessage = 'Invalid email or password (401 Unauthorized)';
+      } else if (e.toString().contains('SocketException') || e.toString().contains('connection')) {
+        errorMessage = 'Network error. Please check your internet connection.';
+      }
+      if (!isClosed) emit(LoginError(errorMessage));
     }
   }
 }

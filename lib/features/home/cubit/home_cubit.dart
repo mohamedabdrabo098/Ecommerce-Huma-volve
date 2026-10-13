@@ -41,22 +41,22 @@ class HomeCubit extends Cubit<HomeState> {
   List<Product> products = [];
 
   Future<void> getCategories() async {
-    emit(CategoryLoading());
+    if (!isClosed) emit(CategoryLoading());
     try {
       categories = await getCategoriesUseCase(const NoParams());
-      emit(CategorySuccess(categories));
+      if (!isClosed) emit(CategorySuccess(categories));
     } catch (e) {
-      emit(CategoryError(e.toString()));
+      if (!isClosed) emit(CategoryError(e.toString()));
     }
   }
 
   Future<void> getProducts() async {
-    emit(ProductLoading());
+    if (!isClosed) emit(ProductLoading());
     try {
       allProducts = await getProductsUseCase(const NoParams());
       _applyFilters();
     } catch (e) {
-      emit(ProductError(e.toString()));
+      if (!isClosed) emit(ProductError(e.toString()));
     }
   }
 
@@ -97,12 +97,12 @@ class HomeCubit extends Cubit<HomeState> {
     products = filtered;
     if (products.isEmpty) {
       if (searchQuery.trim().isNotEmpty) {
-        emit(ProductError('No products found matching "$searchQuery"'));
+        if (!isClosed) emit(ProductError('No products found matching "$searchQuery"'));
       } else {
-        emit(ProductError('No products found in this category'));
+        if (!isClosed) emit(ProductError('No products found in this category'));
       }
     } else {
-      emit(ProductSuccess(products));
+      if (!isClosed) emit(ProductSuccess(products));
     }
   }
 }

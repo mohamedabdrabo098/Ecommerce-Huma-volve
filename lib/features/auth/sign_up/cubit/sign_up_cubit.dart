@@ -26,7 +26,7 @@ class SignUpCubit extends Cubit<SignUpState> {
     required String password,
     String avatar = 'https://i.imgur.com/LDOO4Qs.jpg',
   }) async {
-    emit(SignUpLoading());
+    if (!isClosed) emit(SignUpLoading());
     try {
       final user = await signUpUseCase(
         SignUpParams(
@@ -36,9 +36,15 @@ class SignUpCubit extends Cubit<SignUpState> {
           avatar: avatar,
         ),
       );
-      emit(SignUpSuccess(user));
+      if (!isClosed) emit(SignUpSuccess(user));
     } catch (e) {
-      emit(SignUpError(e.toString()));
+      String errorMessage = 'Registration failed. Please try again.';
+      if (e.toString().contains('400')) {
+        errorMessage = 'Email already exists or invalid data.';
+      } else if (e.toString().contains('SocketException') || e.toString().contains('connection')) {
+        errorMessage = 'Network error. Please check your internet connection.';
+      }
+      if (!isClosed) emit(SignUpError(errorMessage));
     }
   }
 }
