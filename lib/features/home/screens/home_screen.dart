@@ -8,8 +8,27 @@ import '../cubit/home_state.dart';
 import '../widgets/product_card.dart';
 import '../widgets/category_chip.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  late final TextEditingController _searchController;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -88,6 +107,8 @@ class HomeScreen extends StatelessWidget {
                               ],
                             ),
                             child: TextField(
+                              controller: _searchController,
+                              onChanged: (value) => cubit.searchProducts(value),
                               decoration: InputDecoration(
                                 hintText: 'Search clothes...',
                                 hintStyle: TextStyle(
@@ -97,48 +118,59 @@ class HomeScreen extends StatelessWidget {
                                   Icons.search,
                                   color: Colors.grey,
                                 ),
-                                suffixIcon: Container(
-                                  margin: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.primary,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: const Icon(
-                                    Icons.tune,
-                                    color: Colors.white,
-                                    size: 20,
-                                  ),
-                                ),
+                                suffixIcon: _searchController.text.isNotEmpty
+                                    ? IconButton(
+                                        icon: const Icon(Icons.clear, color: Colors.grey),
+                                        onPressed: () {
+                                          _searchController.clear();
+                                          cubit.searchProducts('');
+                                          setState(() {});
+                                        },
+                                      )
+                                    : Container(
+                                        margin: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: AppTheme.primary,
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: const Icon(
+                                          Icons.tune,
+                                          color: Colors.white,
+                                          size: 20,
+                                        ),
+                                      ),
                                 border: InputBorder.none,
                               ),
                             ),
                           ),
-                          const SizedBox(height: 32),
-                          SizedBox(
-                            height: 44,
-                            child: state is CategoryLoading
-                                ? const Center(
-                                    child: CircularProgressIndicator(),
-                                  )
-                                : state is CategoryError
-                                ? Center(child: Text(state.message))
-                                : ListView.separated(
-                                    scrollDirection: Axis.horizontal,
-                                    itemCount: cubit.categories.length,
-                                    separatorBuilder: (context, index) =>
-                                        const SizedBox(width: 12),
-                                    itemBuilder: (context, index) {
-                                      return CategoryChip(
-                                        label: cubit.categories[index],
-                                        isSelected:
-                                            cubit.selectedCategoryIndex ==
-                                            index,
-                                        onTap: () =>
-                                            cubit.selectCategory(index),
-                                      );
-                                    },
-                                  ),
-                          ),
+                          if (cubit.searchQuery.trim().isEmpty) ...[
+                            const SizedBox(height: 32),
+                            SizedBox(
+                              height: 44,
+                              child: state is CategoryLoading
+                                  ? const Center(
+                                      child: CircularProgressIndicator(),
+                                    )
+                                  : state is CategoryError
+                                  ? Center(child: Text(state.message))
+                                  : ListView.separated(
+                                      scrollDirection: Axis.horizontal,
+                                      itemCount: cubit.categories.length,
+                                      separatorBuilder: (context, index) =>
+                                          const SizedBox(width: 12),
+                                      itemBuilder: (context, index) {
+                                        return CategoryChip(
+                                          label: cubit.categories[index],
+                                          isSelected:
+                                              cubit.selectedCategoryIndex ==
+                                              index,
+                                          onTap: () =>
+                                              cubit.selectCategory(index),
+                                        );
+                                      },
+                                    ),
+                            ),
+                          ],
                         ],
                       ),
                     ),

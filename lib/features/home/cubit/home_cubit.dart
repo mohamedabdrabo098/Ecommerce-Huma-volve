@@ -35,6 +35,7 @@ class HomeCubit extends Cubit<HomeState> {
         super(HomeInitial());
 
   int selectedCategoryIndex = 0;
+  String searchQuery = '';
   List<String> categories = [];
   List<Product> allProducts = [];
   List<Product> products = [];
@@ -53,12 +54,7 @@ class HomeCubit extends Cubit<HomeState> {
     emit(ProductLoading());
     try {
       allProducts = await getProductsUseCase(const NoParams());
-      products = allProducts;
-      if (products.isEmpty) {
-        emit(ProductError('No products found'));
-      } else {
-        emit(ProductSuccess(products));
-      }
+      _applyFilters();
     } catch (e) {
       emit(ProductError(e.toString()));
     }
@@ -66,17 +62,45 @@ class HomeCubit extends Cubit<HomeState> {
 
   void selectCategory(int index) {
     selectedCategoryIndex = index;
-    if (categories.isEmpty || categories[index] == 'All') {
-      products = allProducts;
-    } else {
-      final selectedCategory = categories[index];
-      products = allProducts
-          .where((p) => p.categoryName == selectedCategory)
-          .toList();
-    }
     emit(CategorySuccess(categories));
+    _applyFilters();
+  }
+
+  void searchProducts(String query) {
+    searchQuery = query;
+    _applyFilters();
+  }
+
+  void _applyFilters() {
+    List<Product> filtered = allProducts;
+
+    // If searching, search globally across all products
+    if (searchQuery.trim().isNotEmpty) {
+      final query = searchQuery.trim().toLowerCase();
+      filtered = filtered.where((p) {
+        return p.name.toLowerCase().contains(query) ||
+            p.description.toLowerCase().contains(query) ||
+            p.categoryName.toLowerCase().contains(query);
+      }).toList();
+    } else {
+      // If not searching, filter by the selected category
+      if (categories.isNotEmpty &&
+          selectedCategoryIndex < categories.length &&
+          categories[selectedCategoryIndex] != 'All') {
+        final selectedCategory = categories[selectedCategoryIndex];
+        filtered = filtered
+            .where((p) => p.categoryName == selectedCategory)
+            .toList();
+      }
+    }
+
+    products = filtered;
     if (products.isEmpty) {
-      emit(ProductError('No products found in this category'));
+      if (searchQuery.trim().isNotEmpty) {
+        emit(ProductError('No products found matching "$searchQuery"'));
+      } else {
+        emit(ProductError('No products found in this category'));
+      }
     } else {
       emit(ProductSuccess(products));
     }
